@@ -63,15 +63,15 @@ struct Quadtree {
     using DataT = std::invoke_result<ObjDataF, ObjT>::type;
     using Node = QuadtreeNode<ObjT, DataT>;
 
-    BBox2<Scalar> bb; 
+    BBox<Scalar, 2> bb; 
     std::vector<Node> nodes;
     std::vector<ObjT> objects;
     ObjDataF functor;
 
-    Point2<Scalar> mortonFactor; // precomputed factor for correct Morton code computation
+    Vec<Scalar, 2> mortonFactor; // precomputed factor for correct Morton code computation
 
     // Initialize an empty quadtree 
-    Quadtree(const BBox2<Scalar>& _bb) : bb(_bb) {
+    Quadtree(const BBox<Scalar, 2>& _bb) : bb(_bb) {
         nodes.resize(1); // Make space for the root node
 
         // set morton code factor
@@ -85,7 +85,7 @@ struct Quadtree {
     };
 
     // Initialize an empty quadtree but preallocate memory for n objects
-    Quadtree(const BBox2<Scalar>& _bb, int n) : Quadtree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>(_bb) {
+    Quadtree(const BBox<Scalar, 2>& _bb, int n) : Quadtree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>(_bb) {
         objects.reserve(n);
         nodes.reserve(n/BUCKETSIZE);
     };
@@ -152,7 +152,7 @@ struct Quadtree {
 
     void insert(const ObjT& obj) {
         // Start with the global bbox
-        Point2<Scalar> const centroid = obj.get_centroid();
+        Vec<Scalar, 2> const centroid = obj.get_centroid();
 
         if (centroid[0] < bb.min(0) || centroid[0] > bb.max(0) || 
                 centroid[1] < bb.min(1) || centroid[1] > bb.max(1)) {

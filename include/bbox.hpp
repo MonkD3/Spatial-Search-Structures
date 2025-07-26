@@ -1,32 +1,31 @@
 #ifndef __SPATIAL_SEARCH_STRUCTURE_HPP__
 #define __SPATIAL_SEARCH_STRUCTURE_HPP__
 
-#include <limits>
-#include <array>
-
 #include "point.hpp"
 
-template<typename Scalar>
-struct BBox2 {
-    Point2<Scalar> pmin;
-    Point2<Scalar> pmax;
+template<typename Scalar, int dim>
+struct BBox {
+    using VecT = Vec<Scalar, dim>;
+    using BBoxT = BBox<Scalar, dim>;
+    VecT pmin;
+    VecT pmax;
 
     // Init an inverted bounding box
-    BBox2() : pmin(Point2<Scalar>::maxPoint()), pmax(Point2<Scalar>::minPoint()) {};
+    BBox() : pmin(VecT::maxPoint()), pmax(VecT::minPoint()) {};
 
     // Combine the bounding box with another
-    inline void combineBox(const BBox2<Scalar>& other) {
-        for (int i = 0; i < 2; i++)
+    inline void combineBox(const BBoxT& other) {
+        for (int i = 0; i < dim; i++)
             pmin[i] = std::min(pmin[i], other.pmin[i]);
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < dim; i++)
             pmax[i] = std::max(pmax[i], other.pmax[i]);
     }
-    inline void combinePoint(const Point2<Scalar>& other) {
-        for (int i = 0; i < 2; i++)
+    inline void combinePoint(const VecT& other) {
+        for (int i = 0; i < dim; i++)
             pmin[i] = std::min(pmin[i], other[i]);
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < dim; i++)
             pmax[i] = std::max(pmax[i], other[i]);
     }
 
@@ -37,11 +36,11 @@ struct BBox2 {
     inline const Scalar& min(int i) const {return pmin[i];};
     inline const Scalar& max(int i) const {return pmax[i];};
 
-    inline Point2<Scalar> get_centroid() const {
+    inline VecT get_centroid() const {
         return  static_cast<Scalar>(0.5) * (pmin + pmax);
     }
 
-    inline BBox2<Scalar> get_bbox() const {
+    inline BBoxT get_bbox() const {
         return *this;
     }
 };

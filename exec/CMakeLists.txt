@@ -1,12 +1,6 @@
-
 add_executable(main)
 target_sources(main PUBLIC main.cpp)
 target_include_directories(main PUBLIC ../include)
-
-add_executable(nbody)
-target_sources(nbody PUBLIC nbody.cpp)
-target_include_directories(nbody PUBLIC ../include)
-
 
 add_executable(wn)
 target_sources(wn PUBLIC fast_winding_number.cpp)

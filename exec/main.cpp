@@ -2,15 +2,19 @@
 #include <ctime>
 #include "quadtree.hpp"
 
+using Scalar = float;
+using BBox2 = BBox<Scalar, 2>;
+using Vec2 = Vec<Scalar, 2>;
+
 template<typename Scalar>
 struct ObjData {
 
-    BBox2<Scalar> operator()(const Point2<Scalar>& obj) const {
+    BBox2 operator()(const Vec2& obj) const {
         return obj.get_bbox();
     };
 
-    BBox2<Scalar> operator()(const BBox2<Scalar>& a, const BBox2<Scalar>& b) const {
-        BBox2<Scalar> ret = a;
+    BBox2 operator()(const BBox2& a, const BBox2& b) const {
+        BBox2 ret = a;
         ret.combineBox(b);
         return ret;
     }
@@ -27,17 +31,17 @@ int main(int argc, char** argv){
 
     srand(42);
 
-    BBox2<float> bb;
+    BBox2 bb;
     bb.min(0) = 0.0f;
     bb.max(0) = 1.0f;
     bb.min(1) = 0.0f;
     bb.max(1) = 1.0f;
 
-    Quadtree<Point2<float>, ObjData<float>, bucketsize, depth> tree(bb, n);
+    Quadtree<Vec2, ObjData<Scalar>, bucketsize, depth> tree(bb, n);
 
     timespec_get(&t0, TIME_UTC);
     for (int i = 0; i < n; i++){
-        Point2<float> p;
+        Vec2 p;
         p[0] = static_cast<float>(rand()) / RAND_MAX;
         p[1] = static_cast<float>(rand()) / RAND_MAX;
 

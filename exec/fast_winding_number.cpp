@@ -2,6 +2,10 @@
 #include <ctime>
 #include "quadtree.hpp"
 
+using Scalar = float;
+using BBox2 = BBox<Scalar, 2>;
+using Vec2 = Vec<Scalar, 2>;
+
 constexpr int bucketsize = 1;
 constexpr int depth = 31;
 constexpr float beta = 2.0f;
@@ -9,17 +13,15 @@ constexpr float beta = 2.0f;
 struct OrientedEdge {
     using Scalar = float;
 
-    Point2<Scalar> s;  // start
-    Point2<Scalar> t;  // target
+    Vec2 s;  // start
+    Vec2 t;  // target
     
-    OrientedEdge(const Point2<Scalar>& _s, const Point2<Scalar>& _t) : s(_s), t(_t) {}
+    OrientedEdge(const Vec2& _s, const Vec2& _t) : s(_s), t(_t) {}
 
-    Point2<Scalar> get_centroid() const {
-        return 0.5f*(t + s);
-    }
+    Vec2 get_centroid() const { return static_cast<Scalar>(0.5)*(t + s); }
 
-    BBox2<Scalar> get_bbox() const {
-        BBox2<Scalar> ret;
+    BBox2 get_bbox() const {
+        BBox2 ret;
         for (int i = 0; i < 2; i++){
             ret.min(i) = std::fmin(s[i], t[i]);
         }
@@ -33,9 +35,9 @@ struct OrientedEdge {
 struct InternalData {
     using Scalar = float;
 
-    BBox2<Scalar>  bb;  // bounding box
-    Point2<Scalar> p;   // centroid
-    Point2<Scalar> wn;  // weighted normal
+    BBox2  bb;  // bounding box
+    Vec2 p;   // centroid
+    Vec2 wn;  // weighted normal
     float r;            // Size of the subtree, computed as the half-diagonal of the bounding box
     float wl;           // weighted length
 };
@@ -49,7 +51,7 @@ struct ComputeInternalData {
         ret.p = edge.get_centroid();
         ret.r = 0.0f;
         
-        Point2<Scalar> dir = edge.t - edge.s;
+        Vec2 dir = edge.t - edge.s;
         ret.wl = dir.norm();
 
         // Do not make the normalization : n_tilde = l * n
@@ -77,9 +79,9 @@ struct ComputeInternalData {
 
 using Tree = Quadtree<OrientedEdge, ComputeInternalData, bucketsize, depth>; 
 using Node = Tree::Node;
-float fast_wn(const Point2<float>& q, const Node& node, const Tree& tree){
+float fast_wn(const Vec2& q, const Node& node, const Tree& tree){
 
-    Point2<float> const vec = node.data.p - q;
+    Vec2 const vec = node.data.p - q;
     float const sqnorm = vec.sqnorm();
     float const far_field = beta*node.data.r;
     if (sqnorm > far_field*far_field) {
@@ -94,11 +96,11 @@ float fast_wn(const Point2<float>& q, const Node& node, const Tree& tree){
                 const OrientedEdge& edge = tree.objects[std::get<0>(node.obj[i])];
 
                 // First order contribution
-                Point2<float> const dir = edge.t - edge.s;
-                Point2<float> const n(dir[1], -dir[0]);
+                Vec2 const dir = edge.t - edge.s;
+                Vec2 const n(dir[1], -dir[0]);
 
-                Point2<float> const pi = edge.get_centroid();
-                Point2<float> const d = pi - q;
+                Vec2 const pi = edge.get_centroid();
+                Vec2 const d = pi - q;
                 float const sqdist = d.sqnorm();
 
                 val += (d[0]*n[0] + d[1]*n[1])/(2.0f*M_PIf*sqdist);
@@ -121,12 +123,14 @@ int main(int argc, char** argv){
     size_t w = 200;
 
     if (argc > 1) n_circle = strtol(argv[1], NULL, 10);
+    if (argc > 2) h = strtoull(argv[2], NULL, 10);
+    if (argc > 3) w = strtoull(argv[3], NULL, 10);
 
     struct timespec t0, t1;
 
     srand(42);
 
-    BBox2<float> bb;
+    BBox2 bb;
     bb.min(0) = -1.f;
     bb.max(0) = 1.f;
     bb.min(1) = -1.f;
@@ -134,19 +138,19 @@ int main(int argc, char** argv){
 
     Tree tree(bb, n_circle);
 
-    FILE* fdcircle = fopen("circle.csv", "w+");
-    std::vector<Point2<float>> coords;
+    // FILE* fdcircle = fopen("circle.csv", "w+");
+    std::vector<Vec2> coords;
     coords.reserve(n_circle);
     for (int i = 0; i < n_circle; i++){
         float s = i*2.0f*M_PIf/n_circle;
-        Point2<float> es(
+        Vec2 es(
             std::cos(s), 
             std::sin(s)
         );
         coords.push_back(es);
-        fprintf(fdcircle, "%.5f,%.5f\n", es[0], es[1]);
+        // fprintf(fdcircle, "%.5f,%.5f\n", es[0], es[1]);
     }
-    fclose(fdcircle);
+    // fclose(fdcircle);
 
     timespec_get(&t0, TIME_UTC);
     for (int i = 0; i < n_circle; i++){
@@ -184,16 +188,16 @@ int main(int argc, char** argv){
     );
     // ========================= in-out query =================================
 
-    std::vector<Point2<float>> ptest(w*h);
-    std::vector<float> wn(w*h);
+    std::vector<Vec2> ptest(w*h);
+    std::vector<Scalar> wn(w*h);
     for (size_t id = 0; id < h*w; id++){
         size_t i = id % w;
         size_t j = id / w;
 
-        float x = bb.min(0) + ((bb.max(0) - bb.min(0))*i) / h;
-        float y = bb.min(1) + ((bb.max(1) - bb.min(1))*j) / w;
+        Scalar x = bb.min(0) + ((bb.max(0) - bb.min(0))*i) / h;
+        Scalar y = bb.min(1) + ((bb.max(1) - bb.min(1))*j) / w;
 
-        ptest[id] = Point2<float>(x, y);
+        ptest[id] = Vec2(x, y);
     }
 
     timespec_get(&t0, TIME_UTC);
@@ -206,12 +210,12 @@ int main(int argc, char** argv){
             w*h,
             (t1.tv_sec - t0.tv_sec)*1e3 + (t1.tv_nsec - t0.tv_nsec)*1e-6);
 
-    FILE* fdout = fopen("query_coords.csv", "w+");
-    FILE* fdwn = fopen("winding_number.csv", "w+");
-    for (size_t id = 0; id < h*w; id++){
-        fprintf(fdout, "%.5f, %.5f\n", ptest[id][0], ptest[id][1]);
-        fprintf(fdwn, "%.5f\n", wn[id]);
-    }
-    fclose(fdout);
-    fclose(fdwn);
+    // FILE* fdout = fopen("query_coords.csv", "w+");
+    // FILE* fdwn = fopen("winding_number.csv", "w+");
+    // for (size_t id = 0; id < h*w; id++){
+    //     fprintf(fdout, "%.5f, %.5f\n", ptest[id][0], ptest[id][1]);
+    //     fprintf(fdwn, "%.5f\n", wn[id]);
+    // }
+    // fclose(fdout);
+    // fclose(fdwn);
 }
