@@ -93,7 +93,7 @@ struct ComputeInternalData {
     }
 };
 
-using Tree = Quadtree<OrientedEdge, ComputeInternalData, bucketsize, depth>; 
+using Tree = Quadtree<OrientedEdge, ComputeInternalData, 2, bucketsize, depth>; 
 using Node = Tree::Node;
 Scalar fast_wn(const Vec2& q, const Node& node, const Tree& tree){
 

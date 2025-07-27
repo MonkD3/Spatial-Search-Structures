@@ -90,7 +90,7 @@ struct Vec {
 
     // ================ Accessor ==========================================
     Scalar& operator[](int i)       { return coord[i]; }
-    const Scalar& operator[](int i) const { return coord[i]; }
+    Scalar  operator[](int i) const { return coord[i]; }
 
     // ================== Geometric / linear algebra functions ============
     Scalar norm() const requires (dim == 2) {
@@ -100,34 +100,38 @@ struct Vec {
         return std::hypot(coord[0], coord[1], coord[2]);
     };
 
+    VecT unit() const {
+        return (*this) / norm();
+    }
+
     Scalar sqnorm() const {
-        Scalar sum = Scalar(0);
+        Scalar sum = static_cast<Scalar>(0);
         for (int i = 0; i < dim; ++i) {
             sum += coord[i] * coord[i];
         }
         return sum;
     }
 
-    VecT unit() const {
-        return (*this) / norm();
-    }
-
     Scalar dot(const VecT& other) const {
-        Scalar sum = Scalar(0);
+        Scalar sum = static_cast<Scalar>(0);
         for (int i = 0; i < dim; ++i) {
             sum += coord[i] * other[i];
         }
         return sum;
     }
 
+    // Component wise multiplication
+    friend VecT cMult(const VecT& p, const VecT& q) {
+        VecT ret;
+        for (int i = 0; i < dim; ++i) ret[i] = p[i]*q[i];
+        return ret;
+    }
+
     // To be able to use them in the quadtree 
     VecT get_centroid() const { return *this; }
 
     BBox<Scalar, dim> get_bbox() const {
-        BBox<Scalar, dim> bb;
-        bb.pmin = *this;
-        bb.pmax = *this;
-        return bb;
+        return BBox<Scalar, dim>(*this, *this);
     }
 
     static constexpr VecT minPoint() {

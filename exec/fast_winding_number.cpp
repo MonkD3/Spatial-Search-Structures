@@ -35,23 +35,23 @@ struct OrientedEdge {
 struct InternalData {
     using Scalar = float;
 
-    BBox2  bb;  // bounding box
-    Vec2 p;   // centroid
-    Vec2 wn;  // weighted normal
-    float r;            // Size of the subtree, computed as the half-diagonal of the bounding box
-    float wl;           // weighted length
+    BBox2 bb;  // bounding box
+    Vec2  p;   // centroid
+    Vec2  wn;  // weighted normal
+    float r;   // Size of the subtree, computed as the half-diagonal of the bounding box
+    float wl;  // weighted length
 };
 
 struct ComputeInternalData {
     using Scalar = OrientedEdge::Scalar;
 
-    InternalData operator()(const OrientedEdge& edge) {
+    InternalData operator()(const OrientedEdge& edge) const {
         InternalData ret;
         ret.bb = edge.get_bbox();
         ret.p = edge.get_centroid();
         ret.r = 0.0f;
         
-        Vec2 dir = edge.t - edge.s;
+        Vec2 const dir = edge.t - edge.s;
         ret.wl = dir.norm();
 
         // Do not make the normalization : n_tilde = l * n
@@ -60,7 +60,7 @@ struct ComputeInternalData {
         return ret;
     };
 
-    InternalData operator()(const InternalData& e1, const InternalData& e2) {
+    InternalData operator()(const InternalData& e1, const InternalData& e2) const {
         InternalData ret;
         ret.bb = e1.bb;
         ret.bb.combineBox(e2.bb);
@@ -77,7 +77,7 @@ struct ComputeInternalData {
     }
 };
 
-using Tree = Quadtree<OrientedEdge, ComputeInternalData, bucketsize, depth>; 
+using Tree = Quadtree<OrientedEdge, ComputeInternalData, 2, bucketsize, depth>; 
 using Node = Tree::Node;
 float fast_wn(const Vec2& q, const Node& node, const Tree& tree){
 
@@ -86,9 +86,9 @@ float fast_wn(const Vec2& q, const Node& node, const Tree& tree){
     float const far_field = beta*node.data.r;
     if (sqnorm > far_field*far_field) {
         // Compute wn with the approx
-        return (vec[0]*node.data.wn[0] + vec[1]*node.data.wn[1])/(2.0f*M_PIf*sqnorm);
+        return (vec.dot(node.data.wn))/(2.0f*M_PIf*sqnorm);
     } else {
-        if (node.isleaf() && !node.obj.size()) return 0.0f;
+        if (!node.n_obj) return 0.0f;
 
         float val = 0.0f;
         if (node.isleaf()){
@@ -103,7 +103,7 @@ float fast_wn(const Vec2& q, const Node& node, const Tree& tree){
                 Vec2 const d = pi - q;
                 float const sqdist = d.sqnorm();
 
-                val += (d[0]*n[0] + d[1]*n[1])/(2.0f*M_PIf*sqdist);
+                val += d.dot(n)/(2.0f*M_PIf*sqdist);
             }
         } else {
             for (size_t i = 0; i < node.children.size(); i++){

@@ -22,9 +22,10 @@
  *                    It can also store internal node data.
  *     e.g. : bounding box, depth, barnes-hut approximations data
  */
-template <typename ObjT, typename DataT>
+template <typename ObjT, typename DataT, int dim>
 struct QuadtreeNode {
-    std::array<size_t, 4> children = {};   // Contains indices of the nodes in the global node vector
+    static constexpr int childPerNode = 1 << dim;
+    std::array<size_t, childPerNode> children = {};   // Contains indices of the nodes in the global node vector
     std::vector<std::pair<size_t, uint64_t>> obj = {}; // contains pairs (indices, morton) of the objects in the global object vector
     DataT data = {};
     size_t n_obj = 0; // number of objects in the subtree
@@ -56,36 +57,41 @@ struct QuadtreeNode {
  *  @template MAX_DEPTH : The maximum depth of the tree
  *
  */
-template <typename ObjT, typename ObjDataF, int BUCKETSIZE=1, int MAX_DEPTH=31>
+template <typename ObjT, typename ObjDataF, int dim, int BUCKETSIZE=1, int MAX_DEPTH=31>
 struct Quadtree {
+    static_assert(dim == 2 || dim == 3, "Tree dimension must be 2 or 3");
     using Tree = Quadtree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>;
     using Scalar = typename ObjT::Scalar;
     using DataT = std::invoke_result<ObjDataF, ObjT>::type;
-    using Node = QuadtreeNode<ObjT, DataT>;
+    using Node = QuadtreeNode<ObjT, DataT, dim>;
+    using VecT = Vec<Scalar, dim>;
+    using BBoxT = BBox<Scalar, dim>;
 
-    BBox<Scalar, 2> bb; 
+    static constexpr int childPerNode = 1 << dim;
+    static constexpr uint64_t childIDMask = 2*dim - 1;
+
+    BBoxT bb; 
     std::vector<Node> nodes;
     std::vector<ObjT> objects;
+    VecT mortonFactor; // precomputed factor for correct Morton code computation
     ObjDataF functor;
 
-    Vec<Scalar, 2> mortonFactor; // precomputed factor for correct Morton code computation
-
     // Initialize an empty quadtree 
-    Quadtree(const BBox<Scalar, 2>& _bb) : bb(_bb) {
+    Quadtree(const BBoxT& _bb) : bb(_bb) {
         nodes.resize(1); // Make space for the root node
 
         // set morton code factor
-        constexpr uint64_t imax = 1ULL << 32;
-        Scalar const xw = (bb.max(0) - bb.min(0));
-        Scalar const yw = (bb.max(1) - bb.min(1));
-        Scalar fx = imax / xw;
-        Scalar fy = imax / yw;
-        if (xw*fx >= static_cast<Scalar>(imax)) mortonFactor[0] = std::nextafter(fx, static_cast<Scalar>(0));
-        if (yw*fy >= static_cast<Scalar>(imax)) mortonFactor[1] = std::nextafter(fy, static_cast<Scalar>(0));
+        constexpr uint64_t imax = 1ULL << (64 / dim);
+        VecT const range = bb.pmax - bb.pmin;
+        for (int i = 0; i < dim; ++i){
+            Scalar f = imax / range[i];
+            if (range[i]*f >= static_cast<Scalar>(imax)) f = std::nextafter(f, static_cast<Scalar>(0));
+            mortonFactor[i] = f;
+        }
     };
 
     // Initialize an empty quadtree but preallocate memory for n objects
-    Quadtree(const BBox<Scalar, 2>& _bb, int n) : Quadtree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>(_bb) {
+    Quadtree(const BBoxT& _bb, int n) : Quadtree<ObjT, ObjDataF, dim, BUCKETSIZE, MAX_DEPTH>(_bb) {
         objects.reserve(n);
         nodes.reserve(n/BUCKETSIZE);
     };
@@ -104,20 +110,20 @@ struct Quadtree {
 
         // Allocate 4 new nodes in the tree and set a pointer from the children
         // to these node
-        nodes.resize(nodes.size() + 4);
+        nodes.resize(nodes.size() + childPerNode);
         Node& node = nodes[node_id];
-        for (size_t i = 0; i < 4; i++){
-            size_t id = nodes.size() - 4 + i;
+        for (size_t i = 0; i < childPerNode; i++){
+            size_t id = nodes.size() - childPerNode + i;
             node.children[i] = id;
         }
 
         // Get the current morton code of the objects in the node and 
         // look at where we need to assign them
-        uint32_t const bitID = 62 - 2*depth;
+        uint32_t const bitID = (64 - dim) - dim*depth;
         for (size_t i = 0; i < node.obj.size(); i++){
             const std::pair<size_t, uint64_t>& cur = node.obj[i];
             uint64_t const morton = cur.second;
-            uint32_t const child_id = (morton >> bitID) & 3;
+            uint32_t const child_id = (morton >> bitID) & childIDMask;
             Node& child = nodes[node.children[child_id]];
             child.obj.push_back(cur);
             child.n_obj++;
@@ -143,7 +149,7 @@ struct Quadtree {
         } else {
             // Take only the two first bits of the morton code
             uint64_t morton = obj.second;
-            uint32_t const child_id = (morton >> (62 - 2*depth)) & 3;
+            uint32_t const child_id = (morton >> ((64 - dim) - dim*depth)) & childIDMask;
 
             // Recurse on next child
             add(node.children[child_id], depth+1, obj);
@@ -152,19 +158,36 @@ struct Quadtree {
 
     void insert(const ObjT& obj) {
         // Start with the global bbox
-        Vec<Scalar, 2> const centroid = obj.get_centroid();
+        VecT const centroid = obj.get_centroid();
 
-        if (centroid[0] < bb.min(0) || centroid[0] > bb.max(0) || 
-                centroid[1] < bb.min(1) || centroid[1] > bb.max(1)) {
+        bool oobb = false;
+        for (int i = 0; i < dim; ++i){
+            oobb |= centroid[i] < bb.min(0) || centroid[i] > bb.max(i);
+        }
+        if (oobb) {
             throw std::runtime_error("Centroid of inserted element is outside of the tree's bounding box");
         }
 
         objects.push_back(obj);
         size_t const obj_id = objects.size()-1;
 
-        uint32_t const x = (centroid[0] - bb.min(0)) * mortonFactor[0];
-        uint32_t const y = (centroid[1] - bb.min(1)) * mortonFactor[1];
-        uint64_t const morton = _pdep_u64(x, UINT64_C(0xAAAAAAAAAAAAAAAA)) |  _pdep_u64(y, UINT64_C(0x5555555555555555));   
+        VecT const coord_float = cMult(centroid - bb.pmin, mortonFactor);
+
+        uint64_t morton = 0;
+        if constexpr (dim == 2) {
+            uint32_t const x = coord_float[0];
+            uint32_t const y = coord_float[1];
+            morton = _pdep_u64(x, UINT64_C(0b1010101010101010101010101010101010101010101010101010101010101010)) 
+                   | _pdep_u64(y, UINT64_C(0b0101010101010101010101010101010101010101010101010101010101010101));  
+        } 
+        if constexpr (dim == 3) {
+            uint32_t const x = coord_float[0];
+            uint32_t const y = coord_float[1];
+            uint32_t const z = coord_float[2];
+            morton = _pdep_u64(x, UINT64_C(0b1001001001001001001001001001001001001001001001001001001001001001)) 
+                   | _pdep_u64(y, UINT64_C(0b0100100100100100100100100100100100100100100100100100100100100100))  
+                   | _pdep_u64(z, UINT64_C(0b0010010010010010010010010010010010010010010010010010010010010010));  
+        }
 
         std::pair<size_t, uint64_t> obj_pair(obj_id, morton);
         add(0, 0, obj_pair);
@@ -194,7 +217,7 @@ struct Quadtree {
             node.data = data;
         } else {
             bool data_is_init = false; 
-            for (size_t i = 0; i < 4; i++){
+            for (size_t i = 0; i < childPerNode; i++){
                 if (nodes[node.children[i]].n_obj) {
                     fit_internal_nodes_helper(node.children[i]);
                     if (!data_is_init) {

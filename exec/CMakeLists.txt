@@ -2,6 +2,10 @@ add_executable(main)
 target_sources(main PUBLIC main.cpp)
 target_include_directories(main PUBLIC ../include)
 
+add_executable(main3D)
+target_sources(main3D PUBLIC main3D.cpp)
+target_include_directories(main3D PUBLIC ../include)
+
 add_executable(wn)
 target_sources(wn PUBLIC fast_winding_number.cpp)
 target_include_directories(wn PUBLIC ../include)
