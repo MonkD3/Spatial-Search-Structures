@@ -6,8 +6,8 @@ using Scalar = float;
 using BBox2 = BBox<Scalar, 2>;
 using Vec2 = Vec<Scalar, 2>;
 
-constexpr int bucketsize = 1;
-constexpr int depth = 31;
+constexpr int bucketsize = 4;
+constexpr int depth = 12;
 constexpr float beta = 2.0f;
 
 struct OrientedEdge {

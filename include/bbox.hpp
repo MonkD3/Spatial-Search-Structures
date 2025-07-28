@@ -12,24 +12,24 @@ struct BBox {
     VecT pmax;
 
     // Init an inverted bounding box
-    BBox() : pmin(VecT::maxPoint()), pmax(VecT::minPoint()) {};
+    BBox() noexcept : pmin(VecT::maxPoint()), pmax(VecT::minPoint()) {};
 
     // Init a bounding box using the bottom-left and top-right corners
-    BBox(const VecT& _pmin, const VecT& _pmax) : pmin(_pmin), pmax(_pmax) {};
+    BBox(const VecT& _pmin, const VecT& _pmax) noexcept : pmin(_pmin), pmax(_pmax) {};
 
     // ============================ Accessors =================================
     // Read-Write
-    inline Scalar& min(int i) {return pmin[i];};
-    inline Scalar& max(int i) {return pmax[i];};
+    inline Scalar& min(int i) noexcept {return pmin[i];};
+    inline Scalar& max(int i) noexcept {return pmax[i];};
 
     // Read-Only
-    inline Scalar min(int i) const {return pmin[i];};
-    inline Scalar max(int i) const {return pmax[i];};
+    inline Scalar min(int i) const noexcept {return pmin[i];};
+    inline Scalar max(int i) const noexcept {return pmax[i];};
 
 
     // ========================= Enlarge bounding box =========================
     // Combine the bounding box with another
-    inline void combineBox(const BBoxT& other) {
+    inline void combineBox(const BBoxT& other) noexcept {
         for (int i = 0; i < dim; i++)
             pmin[i] = std::min(pmin[i], other.pmin[i]);
 
@@ -38,7 +38,7 @@ struct BBox {
     }
 
     // Add a point to the bounding box
-    inline void combinePoint(const VecT& other) {
+    inline void combinePoint(const VecT& other) noexcept {
         for (int i = 0; i < dim; i++)
             pmin[i] = std::min(pmin[i], other[i]);
 
@@ -47,11 +47,11 @@ struct BBox {
     }
 
     // =================== Requirements for Quadtree indexing =================
-    inline VecT get_centroid() const {
+    inline VecT get_centroid() const noexcept {
         return static_cast<Scalar>(0.5) * (pmin + pmax);
     }
 
-    inline BBoxT get_bbox() const { return *this; }
+    inline BBoxT get_bbox() const noexcept { return *this; }
 };
 
 #endif // __SPATIAL_SEARCH_STRUCTURE_HPP__

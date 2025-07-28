@@ -60,21 +60,25 @@ struct QuadtreeNode {
 template <typename ObjT, typename ObjDataF, int dim, int BUCKETSIZE=1, int MAX_DEPTH=31>
 struct Quadtree {
     static_assert(dim == 2 || dim == 3, "Tree dimension must be 2 or 3");
-    using Tree = Quadtree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>;
-    using Scalar = typename ObjT::Scalar;
-    using DataT = std::invoke_result<ObjDataF, ObjT>::type;
-    using Node = QuadtreeNode<ObjT, DataT, dim>;
-    using VecT = Vec<Scalar, dim>;
-    using BBoxT = BBox<Scalar, dim>;
 
-    static constexpr int childPerNode = 1 << dim;
-    static constexpr uint64_t childIDMask = 2*dim - 1;
+    using Scalar = typename ObjT::Scalar; // Type of scalars
+    using DataT  = std::invoke_result<ObjDataF, ObjT>::type;  // Type of the data stored in the inner nodes
+
+    // Shorthands
+    using Tree   = Quadtree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>;
+    using Node   = QuadtreeNode<ObjT, DataT, dim>;
+    using VecT   = Vec<Scalar, dim>;
+    using BBoxT  = BBox<Scalar, dim>;
+
+    static constexpr int      childPerNode = 1 << dim;
+    static constexpr uint64_t childIDMask  = 2*dim - 1;
 
     BBoxT bb; 
     std::vector<Node> nodes;
     std::vector<ObjT> objects;
     VecT mortonFactor; // precomputed factor for correct Morton code computation
     ObjDataF functor;
+    int max_depth = 0;
 
     // Initialize an empty quadtree 
     Quadtree(const BBoxT& _bb) : bb(_bb) {
@@ -134,11 +138,11 @@ struct Quadtree {
 
     void add(size_t const node_id, int depth, std::pair<size_t, uint64_t>& obj) {
         Node& node = nodes[node_id];
+        max_depth = std::max(depth, max_depth);
         if (node.isleaf()){
             // Add the object in this node 
             // WARNING : if BUCKETSIZE objects share the same morton code 
             // then the tree will automatically go down to MAX_DEPTH.
-            // When BUCKETSIZE is large this will not be a problem
             if (node.obj.size() < BUCKETSIZE || depth >= MAX_DEPTH) {
                 node.n_obj++;
                 node.obj.push_back(obj);
@@ -160,6 +164,7 @@ struct Quadtree {
         // Start with the global bbox
         VecT const centroid = obj.get_centroid();
 
+        // Check if the object is inside the bounding box of the tree
         bool oobb = false;
         for (int i = 0; i < dim; ++i){
             oobb |= centroid[i] < bb.min(0) || centroid[i] > bb.max(i);
@@ -201,6 +206,7 @@ struct Quadtree {
     void fit_internal_nodes() { 
         fit_internal_nodes_helper(0); // start on the root
     }
+
     void fit_internal_nodes_helper(size_t const node_id){ 
         Node& node = nodes[node_id];
         if (node.isleaf() && node.obj.size()) {
