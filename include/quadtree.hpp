@@ -146,18 +146,18 @@ struct Quadtree {
             if (node.obj.size() < BUCKETSIZE || depth >= MAX_DEPTH) {
                 node.n_obj++;
                 node.obj.push_back(obj);
+                return;
             } else {
-                split(node_id, depth);           // Split the current node into 4
-                add(node_id, depth, obj); // Retry adding on this node
+                split(node_id, depth); // Split the current node
             }
-        } else {
-            // Take only the two first bits of the morton code
-            uint64_t morton = obj.second;
-            uint32_t const child_id = (morton >> ((64 - dim) - dim*depth)) & childIDMask;
+        }  
+        
+        // Take only the two first bits of the morton code
+        uint64_t morton = obj.second;
+        uint32_t const child_id = (morton >> ((64 - dim) - dim*depth)) & childIDMask;
 
-            // Recurse on next child
-            add(node.children[child_id], depth+1, obj);
-        }
+        // Recurse on next child
+        add(nodes[node_id].children[child_id], depth+1, obj);
     }
 
     void insert(const ObjT& obj) {

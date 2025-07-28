@@ -1,57 +1,57 @@
 #ifndef __SPATIAL_SEARCH_STRUCTURE_HPP__
 #define __SPATIAL_SEARCH_STRUCTURE_HPP__
 
-#include "point.hpp"
+#include "point.h"
+#include "bbox.h"
 
 template<typename Scalar, int dim>
-struct BBox {
-    using VecT = Vec<Scalar, dim>;
-    using BBoxT = BBox<Scalar, dim>;
+BBox<Scalar, dim>::BBox() noexcept : pmin(VecT::maxPoint()), pmax(VecT::minPoint()) {};
 
-    VecT pmin;
-    VecT pmax;
+template<typename Scalar, int dim>
+BBox<Scalar, dim>::BBox(const VecT& _pmin, const VecT& _pmax) noexcept : pmin(_pmin), pmax(_pmax) {};
 
-    // Init an inverted bounding box
-    BBox() noexcept : pmin(VecT::maxPoint()), pmax(VecT::minPoint()) {};
+// ============================ Accessors =================================
+// Read-Write
+template<typename Scalar, int dim>
+Scalar& BBox<Scalar, dim>::min(int i) noexcept {return pmin[i];};
 
-    // Init a bounding box using the bottom-left and top-right corners
-    BBox(const VecT& _pmin, const VecT& _pmax) noexcept : pmin(_pmin), pmax(_pmax) {};
+template<typename Scalar, int dim>
+Scalar& BBox<Scalar, dim>::max(int i) noexcept {return pmax[i];};
 
-    // ============================ Accessors =================================
-    // Read-Write
-    inline Scalar& min(int i) noexcept {return pmin[i];};
-    inline Scalar& max(int i) noexcept {return pmax[i];};
+// Read-Only
+template<typename Scalar, int dim>
+Scalar BBox<Scalar, dim>::min(int i) const noexcept {return pmin[i];};
 
-    // Read-Only
-    inline Scalar min(int i) const noexcept {return pmin[i];};
-    inline Scalar max(int i) const noexcept {return pmax[i];};
+template<typename Scalar, int dim>
+Scalar BBox<Scalar, dim>::max(int i) const noexcept {return pmax[i];};
 
 
-    // ========================= Enlarge bounding box =========================
-    // Combine the bounding box with another
-    inline void combineBox(const BBoxT& other) noexcept {
-        for (int i = 0; i < dim; i++)
-            pmin[i] = std::min(pmin[i], other.pmin[i]);
+// ========================= Enlarge bounding box =========================
+template<typename Scalar, int dim>
+void BBox<Scalar, dim>::combineBox(const BBoxT& other) noexcept {
+    for (int i = 0; i < dim; i++)
+        pmin[i] = std::min(pmin[i], other.pmin[i]);
 
-        for (int i = 0; i < dim; i++)
-            pmax[i] = std::max(pmax[i], other.pmax[i]);
-    }
+    for (int i = 0; i < dim; i++)
+        pmax[i] = std::max(pmax[i], other.pmax[i]);
+}
 
-    // Add a point to the bounding box
-    inline void combinePoint(const VecT& other) noexcept {
-        for (int i = 0; i < dim; i++)
-            pmin[i] = std::min(pmin[i], other[i]);
+template<typename Scalar, int dim>
+void BBox<Scalar, dim>::combinePoint(const VecT& other) noexcept {
+    for (int i = 0; i < dim; i++)
+        pmin[i] = std::min(pmin[i], other[i]);
 
-        for (int i = 0; i < dim; i++)
-            pmax[i] = std::max(pmax[i], other[i]);
-    }
+    for (int i = 0; i < dim; i++)
+        pmax[i] = std::max(pmax[i], other[i]);
+}
 
-    // =================== Requirements for Quadtree indexing =================
-    inline VecT get_centroid() const noexcept {
-        return static_cast<Scalar>(0.5) * (pmin + pmax);
-    }
+// =================== Requirements for Quadtree indexing =================
+template<typename Scalar, int dim>
+Vec<Scalar, dim> BBox<Scalar, dim>::get_centroid() const noexcept {
+    return static_cast<Scalar>(0.5) * (pmin + pmax);
+}
 
-    inline BBoxT get_bbox() const noexcept { return *this; }
-};
+template<typename Scalar, int dim>
+BBox<Scalar, dim> BBox<Scalar, dim>::get_bbox() const noexcept { return *this; }
 
 #endif // __SPATIAL_SEARCH_STRUCTURE_HPP__
