@@ -9,11 +9,13 @@ target_sources(quadtree
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bbox.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/point.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/winding_number_tree_2D.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/winding_number_tree_3D.cpp
     INTERFACE ${CMAKE_SOURCE_DIR}/include/bbox.hpp
               ${CMAKE_SOURCE_DIR}/include/bbox.h
               ${CMAKE_SOURCE_DIR}/include/point.hpp
               ${CMAKE_SOURCE_DIR}/include/point.h
               ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_2D.h
+              ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_3D.h
 )
 
 find_package(OpenMP)

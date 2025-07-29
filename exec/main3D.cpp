@@ -6,6 +6,9 @@ using Scalar = float;
 using BBox3 = BBox<Scalar, 3>;
 using Vec3 = Vec<Scalar, 3>;
 
+constexpr int bucketsize = 4;
+constexpr int depth = 16;
+
 template<typename Scalar>
 struct ObjData {
 
@@ -20,10 +23,24 @@ struct ObjData {
     }
 };
 
+using Tree = Quadtree<Vec3, ObjData<Scalar>, 3, bucketsize, depth>;
+using Node = Tree::Node;
+
+void compute_stats(const Tree& tree, size_t node_id, size_t& ninternal, size_t& nleaf, size_t& nemptyleaf) {
+    const Node& node = tree.nodes[node_id];
+    if (node.isleaf()) {
+        nleaf++;
+        if (node.obj.size() == 0) nemptyleaf++;
+    } else {
+        ninternal++;
+        for (size_t i = 0; i < Tree::childPerNode; i++){
+            compute_stats(tree, node.children[i], ninternal, nleaf, nemptyleaf);
+        }
+    }
+}
+
 int main(int argc, char** argv){
     int n = 100;
-    constexpr int bucketsize = 1;
-    constexpr int depth = 31;
 
     if (argc > 1) n = strtol(argv[1], NULL, 10);
 
@@ -39,7 +56,7 @@ int main(int argc, char** argv){
     bb.max(1) = 1.0f;
     bb.max(2) = 1.0f;
 
-    Quadtree<Vec3, ObjData<Scalar>, 3, bucketsize, depth> tree(bb, n);
+    Tree tree(bb, n);
 
     timespec_get(&t0, TIME_UTC);
     for (int i = 0; i < n; i++){
@@ -68,5 +85,19 @@ int main(int argc, char** argv){
         tree.nodes[0].data.max(0),
         tree.nodes[0].data.max(1),
         tree.nodes[0].data.max(2)
+    );
+
+    size_t ninternal = 0;
+    size_t nleaf = 0;
+    size_t nemptyleaf = 0;
+    compute_stats(tree, 0, ninternal, nleaf, nemptyleaf);
+
+    printf(
+        "tree.nodes.size() : %zu\n"
+        "tree.max_depth : %d\n"
+        "Number of internal nodes : %zu\n"
+        "Number of leaf nodes : %zu\n"
+        "Number of empty leaf nodes : %zu\n",
+        tree.nodes.size(), tree.max_depth, ninternal, nleaf, nemptyleaf
     );
 }

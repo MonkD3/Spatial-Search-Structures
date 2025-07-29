@@ -77,7 +77,6 @@ struct Quadtree {
     std::vector<Node> nodes;
     std::vector<ObjT> objects;
     VecT mortonFactor; // precomputed factor for correct Morton code computation
-    ObjDataF functor;
     int max_depth = 0;
 
     // Initialize an empty quadtree 
@@ -209,15 +208,17 @@ struct Quadtree {
 
     void fit_internal_nodes_helper(size_t const node_id){ 
         Node& node = nodes[node_id];
+        ObjDataF compute_functor;
+        
         if (node.isleaf() && node.obj.size()) {
             // Combine the data of all objects on this leaf
             std::pair<size_t, uint64_t> o = node.obj[0];
-            DataT data = functor(objects[o.first]);
+            DataT data = compute_functor(objects[o.first]);
 
             for (size_t i = 1; i < node.obj.size(); i++){
                 o = node.obj[i];
-                DataT data_other = functor(objects[o.first]);
-                data = functor(data, data_other);
+                DataT data_other = compute_functor(objects[o.first]);
+                data = compute_functor(data, data_other);
             }
 
             node.data = data;
@@ -230,7 +231,7 @@ struct Quadtree {
                         node.data = nodes[node.children[i]].data;
                         data_is_init = true;
                     } else {
-                        node.data = functor(node.data, nodes[node.children[i]].data);
+                        node.data = compute_functor(node.data, nodes[node.children[i]].data);
                     }
                 }
             }
