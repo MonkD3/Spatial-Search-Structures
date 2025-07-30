@@ -1,6 +1,7 @@
 #include "point.h"
 #include "bbox.h"
 #include "winding_number_tree_3D.h"
+#include <cmath>
 
 OrientedTri::OrientedTri(const VecT& _s, const VecT& _t, const VecT& _u) {
     VecT const a = _t - _s;
@@ -53,20 +54,20 @@ ScalarType fast_wn(const VecT& q, const Node& node, const WNOcTree& tree){
         for (size_t i = 0; i < node.obj.size(); i++) {
             const OrientedTri& tri = tree.objects[node.obj[i].first];
 
-            VecT const n = tri.n;
-            VecT const pi = tri.get_centroid();
-            VecT const d = pi - q;
-            ScalarType const sqdist = d.sqnorm();
+            VecT const pi = tri.get_centroid() - q;
+            ScalarType const sqdist = pi.sqnorm();
+            ScalarType const dist = pi.norm();
 
-            val += d.dot(n)/(4.0*M_PI*sqdist);
+            val += (pi/dist).dot(tri.n)/(8.0*M_PI*sqdist);
         }
     } else {
         VecT const vec = node.data.p - q;
-        ScalarType const norm = vec.norm();
+        ScalarType const sqnorm = vec.sqnorm();
         ScalarType const far_field = beta*node.data.r;
-        if (norm > far_field) {
+        if (sqnorm > far_field*far_field) {
             // Compute wn with the approx
-            return (vec.dot(node.data.wn))/(4.0*M_PI*norm*norm);
+            ScalarType const norm = vec.norm();
+            return (vec.dot(node.data.wn))/(8.0*M_PI*sqnorm*norm);
         } else {
             for (size_t i = 0; i < WNOcTree::childPerNode; i++){
                 if (tree.nodes[node.children[i]].n_obj)
