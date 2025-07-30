@@ -54,7 +54,7 @@ class WNQuadTree:
             edges.shape[0]
         )
         if print_perf:
-            print(f"Time taken to initialize and construct tree : {(perf_counter()-t0)*1000:.5f} ms")
+            print(f"Time taken to initialize and construct tree (#nodes={nodes.shape[0]}, #edges={edges.shape[0]}) : {(perf_counter()-t0)*1000:.5f} ms")
 
         return
 
@@ -133,7 +133,7 @@ class WNOcTree:
             tri.shape[0]
         )
         if print_perf:
-            print(f"Time taken to initialize and construct tree : {(perf_counter()-t0)*1000:.5f} ms")
+            print(f"Time taken to initialize and construct tree (#nodes={nodes.shape[0]}, #tri={tri.shape[0]}) : {(perf_counter()-t0)*1000:.5f} ms")
 
         return
 
