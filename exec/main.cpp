@@ -87,10 +87,11 @@ int main(int argc, char** argv){
 
     printf(
         "tree.nodes.size() : %zu\n"
+        "tree.max_depth : %d\n"
         "Number of internal nodes : %zu\n"
         "Number of leaf nodes : %zu\n"
         "Number of empty leaf nodes : %zu\n",
-        tree.nodes.size(), ninternal, nleaf, nemptyleaf
+        tree.nodes.size(), tree.max_depth, ninternal, nleaf, nemptyleaf
     );
 
 }

@@ -26,16 +26,21 @@ struct ObjData {
 using Tree = Quadtree<Vec3, ObjData<Scalar>, 3, bucketsize, depth>;
 using Node = Tree::Node;
 
-void compute_stats(const Tree& tree, size_t node_id, size_t& ninternal, size_t& nleaf, size_t& nemptyleaf) {
+void compute_stats(const Tree& tree, size_t node_id, size_t& ninternal, size_t& nleaf, size_t& nemptyleaf, size_t& nuniquechild) {
     const Node& node = tree.nodes[node_id];
     if (node.isleaf()) {
         nleaf++;
         if (node.obj.size() == 0) nemptyleaf++;
     } else {
         ninternal++;
+        int nchildren = 0;
         for (size_t i = 0; i < Tree::childPerNode; i++){
-            compute_stats(tree, node.children[i], ninternal, nleaf, nemptyleaf);
+            compute_stats(tree, node.children[i], ninternal, nleaf, nemptyleaf, nuniquechild);
+            if (tree.nodes[node.children[i]].n_obj){
+                nchildren++;
+            }
         }
+        if (nchildren == 1) nuniquechild++;
     }
 }
 
@@ -90,14 +95,16 @@ int main(int argc, char** argv){
     size_t ninternal = 0;
     size_t nleaf = 0;
     size_t nemptyleaf = 0;
-    compute_stats(tree, 0, ninternal, nleaf, nemptyleaf);
+    size_t nuniquechild = 0;
+    compute_stats(tree, 0, ninternal, nleaf, nemptyleaf, nuniquechild);
 
     printf(
         "tree.nodes.size() : %zu\n"
         "tree.max_depth : %d\n"
         "Number of internal nodes : %zu\n"
         "Number of leaf nodes : %zu\n"
-        "Number of empty leaf nodes : %zu\n",
-        tree.nodes.size(), tree.max_depth, ninternal, nleaf, nemptyleaf
+        "Number of empty leaf nodes : %zu\n"
+        "Number of internal nodes with only one child : %zu\n",
+        tree.nodes.size(), tree.max_depth, ninternal, nleaf, nemptyleaf, nuniquechild
     );
 }
