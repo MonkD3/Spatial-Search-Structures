@@ -166,7 +166,7 @@ struct Quadtree {
         // Check if the object is inside the bounding box of the tree
         bool oobb = false;
         for (int i = 0; i < dim; ++i){
-            oobb |= centroid[i] < bb.min(0) || centroid[i] > bb.max(i);
+            oobb |= centroid[i] < bb.min(i) || centroid[i] > bb.max(i);
         }
         if (oobb) {
             throw std::runtime_error("Centroid of inserted element is outside of the tree's bounding box");
