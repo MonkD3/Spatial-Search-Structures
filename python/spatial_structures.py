@@ -6,9 +6,19 @@ import pathlib
 
 print_perf = os.getenv("SHOW_TIME") is not None
 
-lib_path = pathlib.Path().absolute() / "build/src/libquadtree.so"
-lib = ctypes.CDLL(lib_path)
+search_paths = [
+    "@CMAKE_LIBRARY_OUTPUT_DIRECTORY@",
+    "@LIB_INSTALL_DIR@",
+    pathlib.Path(__file__).parent.parent / "lib"
+]
 
+libdir_path = ""
+for path in search_paths:
+    if pathlib.Path(path).exists():
+        libdir_path = path 
+        break
+
+lib = np.ctypeslib.load_library("libquadtree", libdir_path)
 
 lib.WNQuadTree_create.restype = ctypes.c_void_p
 lib.WNQuadTree_create.argtypes = [
