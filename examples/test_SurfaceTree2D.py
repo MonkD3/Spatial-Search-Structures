@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 
-plot = False
-n = 1000
-ntest = 500
+plot = True
+n = 100
+ntest = 100
 
 t = np.linspace(0, 2*np.pi, n, endpoint=False)
 coords = np.zeros((n, 2))
