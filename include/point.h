@@ -91,6 +91,8 @@ struct Vec {
     Scalar norm() const noexcept requires (dim == 3);
     Scalar sqnorm() const noexcept;
     Scalar dot(const VecT& other) const noexcept;
+    Scalar cross(const VecT& other) const noexcept requires (dim == 2);
+    VecT cross(const VecT& other) const noexcept requires (dim == 3);
 
     VecT unit() const noexcept;
 

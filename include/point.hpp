@@ -89,6 +89,19 @@ Scalar Vec<Scalar, dim>::dot(const VecT& other) const noexcept {
     return sum;
 }
 
+template<typename Scalar, int dim>
+Scalar Vec<Scalar, dim>::cross(const Vec<Scalar, dim>& other) const noexcept requires (dim == 2) {
+    return coord[0]*other.coord[1] - coord[1]*other.coord[0];
+}
+
+template<typename Scalar, int dim>
+Vec<Scalar, dim> Vec<Scalar, dim>::cross(const Vec<Scalar, dim>& other) const noexcept requires (dim == 3) {
+    return Vec<Scalar, dim>({
+        (coord[1]*other.coord[2] - coord[2]*other.coord[1]),
+        (coord[2]*other.coord[0] - coord[0]*other.coord[2]),   
+        (coord[0]*other.coord[1] - coord[1]*other.coord[0])
+    });
+}
 
 // To be able to use them in the quadtree 
 template<typename Scalar, int dim>
