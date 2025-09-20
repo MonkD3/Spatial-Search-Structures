@@ -1,4 +1,4 @@
-from spatial_structures import SurfaceTree2D
+from search_structures.surface_distance_2D import SurfaceTree2D
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc

@@ -1,4 +1,4 @@
-from spatial_structures import WNOcTree
+from search_structures.fwn_3D import WNOcTree
 from time import perf_counter
 import numpy as np
 import matplotlib.pyplot as plt

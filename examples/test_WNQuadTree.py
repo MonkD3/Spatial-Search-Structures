@@ -1,4 +1,4 @@
-from spatial_structures import WNQuadTree
+from search_structures.fwn2D import WNQuadTree
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
