@@ -3,6 +3,7 @@ set(PYTHON_API_SRC
   fwn_2D.py
   fwn_3D.py
   surface_distance_2D.py
+  mesh_node_loc_2D.py
 )
 
 foreach(f ${PYTHON_API_SRC})

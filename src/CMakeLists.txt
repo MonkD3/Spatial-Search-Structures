@@ -21,6 +21,7 @@ target_sources(geometry PUBLIC
           ${CMAKE_SOURCE_DIR}/include/bbox.h
           ${CMAKE_SOURCE_DIR}/include/point.hpp
           ${CMAKE_SOURCE_DIR}/include/point.h
+          ${CMAKE_SOURCE_DIR}/include/predicates.hpp
 )
 
 if (TARGET geometry)
@@ -48,6 +49,7 @@ target_sources(quadtree
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/winding_number_tree_2D.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/winding_number_tree_3D.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/surface_distance_2D.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/mesh_node_loc_2D.cpp
 )
 
 # Set public headers
@@ -66,6 +68,7 @@ target_sources(quadtree PUBLIC
     FILES ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_2D.h
           ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_3D.h
           ${CMAKE_SOURCE_DIR}/interface/surface_distance_2D.h
+          ${CMAKE_CURRENT_SOURCE_DIR}/mesh_node_loc_2D.h
 )
 
 

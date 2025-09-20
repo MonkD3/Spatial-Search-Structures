@@ -16,6 +16,7 @@ set(PYTHON_EXEC
     test_SurfaceTree2D.py
     test_WNOcTree.py
     test_WNQuadTree.py
+    test_MeshTree2D.py
 )
 
 foreach(f ${PYTHON_EXEC})
