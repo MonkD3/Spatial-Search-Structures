@@ -50,6 +50,8 @@ target_sources(quadtree
             ${CMAKE_CURRENT_SOURCE_DIR}/winding_number_tree_3D.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/surface_distance_2D.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/mesh_node_loc_2D.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/indexed_mesh_node_loc_2D.cpp
+
 )
 
 # Set public headers
@@ -58,6 +60,8 @@ target_sources(quadtree PUBLIC
     TYPE HEADERS
     BASE_DIRS ${CMAKE_SOURCE_DIR}/include
     FILES ${CMAKE_SOURCE_DIR}/include/quadtree.hpp
+          ${CMAKE_SOURCE_DIR}/include/indexed_quadtree.hpp
+
 )
 
 # Set public interface
@@ -68,7 +72,8 @@ target_sources(quadtree PUBLIC
     FILES ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_2D.h
           ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_3D.h
           ${CMAKE_SOURCE_DIR}/interface/surface_distance_2D.h
-          ${CMAKE_CURRENT_SOURCE_DIR}/mesh_node_loc_2D.h
+          ${CMAKE_SOURCE_DIR}/interface/indexed_mesh_node_loc_2D.h
+          ${CMAKE_SOURCE_DIR}/interface/mesh_node_loc_2D.h
 )
 
 

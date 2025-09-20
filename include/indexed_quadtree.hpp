@@ -1,5 +1,6 @@
-#ifndef __SPATIAL_SEARCH_STRUCTURE_QUADTREE_HPP__
-#define __SPATIAL_SEARCH_STRUCTURE_QUADTREE_HPP__
+#ifndef __SPATIAL_SEARCH_STRUCTURE_INDEXED_QUADTREE_HPP__
+#define __SPATIAL_SEARCH_STRUCTURE_INDEXED_QUADTREE_HPP__
+
 #include <array>
 #include <cstddef>
 #include <cmath>
@@ -16,16 +17,15 @@
  *  class QuadtreeNode<ObjT, DataT>
  *  @brief : Represent an internal quadtree node
  *
- *  @attribute children : an std::array of size 8 containing pointers to 
+ *  @attribute children : an std::array of size 2^dim containing pointers to 
  *                        the children of the node
  *  @attribute obj : the object stored at this node
  *     e.g. : points, triangles, spheres
- *  @attribute data : additional data about the object.
- *                    It can also store internal node data.
+ *  @attribute data : Internal node data
  *     e.g. : bounding box, depth, barnes-hut approximations data
  */
 template <typename ObjT, typename DataT, int dim>
-struct QuadtreeNode {
+struct IndexedQuadtreeNode {
     static constexpr int childPerNode = 1 << dim;
     std::array<size_t, childPerNode> children = {};   // Contains indices of the nodes in the global node vector
     std::vector<std::pair<size_t, uint64_t>> obj = {}; // contains pairs (indices, morton) of the objects in the global object vector
@@ -36,39 +36,40 @@ struct QuadtreeNode {
 };
 
 /**
- *  class Quadtree<ObjT, DataT>
+ *  class IndexedQuadTree<ObjT, ObjDataF, dim, BUCKETSIZE, MAX_DEPTH>
  *  @brief : a quadtree
  *
- *  @template ObjT : the type of object to be indexed. It should implement the 
- *      following functions :
- *          - get_centroid() : return a point corresponding to the centroid of the
- *                             object
- *          - get_bbox() : return the bounding box of the object
- *      and have the following typename :
- *          - Scalar
+ *  @template ObjT : the type of object to be indexed. 
+ *  It should define the following typename :
+ *      - Scalar (e.g. using Scalar = float)
+ *  And it should implement the following methods :
+ *      - get_centroid(const std::vector<Vec<ObjT::Scalar, dim>>& coords) const : 
+ *                  return a point corresponding to the centroid of the object
+ *      - get_bbox(const std::vector<Vec<ObjT::Scalar, dim>>& coords) const : 
+ *                  return the bounding box of the object
  *
  *  @template ObjDataF : A functor to compute the data (of user-defined type DataT)
- *                       associated to the objects 
- *                       and internal nodes. It should overload operator() twice :
- *          - DataT operator()(const ObjT& obj) : 
+ *                       associated to the objects and internal nodes. 
+ *  It should overload operator() twice :
+ *      - DataT operator()(const ObjT& obj) : 
  *                Return the data associated to the object.
- *          - DataT operator()(const DataT& d1, const DataT& d2) : 
+ *      - DataT operator()(const DataT& d1, const DataT& d2) : 
  *                Return the data associated to the combination of multiple nodes.
  *                Allow to compute data of the internal nodes.
+ *  @template dim : The dimension of the space
  *  @template BUCKETSIZE : The number of objects to store on leaf nodes
  *  @template MAX_DEPTH : The maximum depth of the tree
- *
  */
 template <typename ObjT, typename ObjDataF, int dim, int BUCKETSIZE=1, int MAX_DEPTH=31>
-struct Quadtree {
+struct IndexedQuadTree {
     static_assert(dim == 2 || dim == 3, "Tree dimension must be 2 or 3");
 
     using Scalar = typename ObjT::Scalar; // Type of scalars
     using DataT  = std::invoke_result<ObjDataF, ObjT>::type;  // Type of the data stored in the inner nodes
 
     // Shorthands
-    using Tree   = Quadtree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>;
-    using Node   = QuadtreeNode<ObjT, DataT, dim>;
+    using Tree   = IndexedQuadTree<ObjT, ObjDataF, BUCKETSIZE, MAX_DEPTH>;
+    using Node   = IndexedQuadtreeNode<ObjT, DataT, dim>;
     using VecT   = Vec<Scalar, dim>;
     using BBoxT  = BBox<Scalar, dim>;
 
@@ -76,13 +77,14 @@ struct Quadtree {
     static constexpr uint64_t childIDMask  = 2*dim - 1;
 
     BBoxT bb; 
-    std::vector<Node> nodes;
-    std::vector<ObjT> objects;
+    std::vector<Node> nodes;  // nodes of the tree
+    std::vector<VecT> coords; // coordinates of the indexed objects
+    std::vector<ObjT> objects; // objects indexed on coords
     VecT mortonFactor; // precomputed factor for correct Morton code computation
     int max_depth = 0;
 
     // Initialize an empty quadtree 
-    Quadtree(const BBoxT& _bb) : bb(_bb) {
+    IndexedQuadTree(const BBoxT& _bb) : bb(_bb) {
         nodes.resize(1); // Make space for the root node
 
         // set morton code factor
@@ -95,9 +97,11 @@ struct Quadtree {
         }
     };
 
-    // Initialize an empty quadtree but preallocate memory for n objects
-    Quadtree(const BBoxT& _bb, int n) : Quadtree<ObjT, ObjDataF, dim, BUCKETSIZE, MAX_DEPTH>(_bb) {
+    // Initialize an empty quadtree but preallocate memory for n objects 
+    // defined on m coordinates
+    IndexedQuadTree(const BBoxT& _bb, int n, int m) : IndexedQuadTree<ObjT, ObjDataF, dim, BUCKETSIZE, MAX_DEPTH>(_bb) {
         objects.reserve(n);
+        coords.reserve(m);
         nodes.reserve(n/BUCKETSIZE);
     };
 
@@ -137,7 +141,7 @@ struct Quadtree {
         node.obj.clear(); 
     }
 
-    void add(size_t const node_id, int depth, std::pair<size_t, uint64_t>& obj) {
+    void add_object(size_t const node_id, int depth, std::pair<size_t, uint64_t>& obj) {
         Node& node = nodes[node_id];
         max_depth = std::max(depth, max_depth);
         if (node.isleaf()){
@@ -158,12 +162,20 @@ struct Quadtree {
         uint32_t const child_id = (morton >> ((64 - dim) - dim*depth)) & childIDMask;
 
         // Recurse on next child
-        add(nodes[node_id].children[child_id], depth+1, obj);
+        add_object(nodes[node_id].children[child_id], depth+1, obj);
     }
 
-    void insert(const ObjT& obj) {
+    bool insert_coord(const VecT& coord) {
+        if (bb.contains(coord)) {
+            coords.push_back(coord);
+            return true;
+        }
+        return false;
+    }
+
+    void insert_object(const ObjT& obj) {
         // Start with the global bbox
-        VecT const centroid = obj.get_centroid();
+        VecT const centroid = obj.get_centroid(coords);
 
         // Check if the object is inside the bounding box of the tree
         bool oobb = false;
@@ -196,7 +208,7 @@ struct Quadtree {
         }
 
         std::pair<size_t, uint64_t> obj_pair(obj_id, morton);
-        add(0, 0, obj_pair);
+        add_object(0, 0, obj_pair);
     }
 
     // Compute the data associated to each internal nodes
@@ -210,7 +222,7 @@ struct Quadtree {
 
     void fit_internal_nodes_helper(size_t const node_id){ 
         Node& node = nodes[node_id];
-        ObjDataF compute_functor;
+        ObjDataF compute_functor(coords);
         
         if (node.isleaf() && node.obj.size()) {
             // Combine the data of all objects on this leaf
@@ -240,4 +252,4 @@ struct Quadtree {
         }
     }
 };
-#endif // __SPATIAL_SEARCH_STRUCTURE_QUADTREE_HPP__
+#endif // __SPATIAL_SEARCH_STRUCTURE_INDEXED_QUADTREE_HPP__

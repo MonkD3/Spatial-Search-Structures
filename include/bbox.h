@@ -36,6 +36,9 @@ struct BBox {
     // =================== Requirements for Quadtree indexing =================
     VecT get_centroid() const noexcept;
     BBoxT get_bbox() const noexcept;
+
+    // Check if point is inside
+    bool contains(const VecT& point) const noexcept;
 };
 
 #ifdef __cplusplus

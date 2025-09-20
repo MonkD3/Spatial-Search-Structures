@@ -1,4 +1,4 @@
-from search_structures.mesh_node_loc_2D import MeshTree2D
+from search_structures.indexed_mesh_node_loc_2D import IndexedMeshTree2D
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
@@ -17,7 +17,7 @@ coords[:, 1] = Y.flatten()
 
 triangulation = Delaunay(coords)
 
-tree = MeshTree2D(coords, triangulation.simplices)
+tree = IndexedMeshTree2D(coords, triangulation.simplices)
 
 query = np.random.uniform(-0.5, 1.5, size=(ntest, 2))
 

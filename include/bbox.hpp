@@ -45,6 +45,16 @@ void BBox<Scalar, dim>::combinePoint(const VecT& other) noexcept {
         pmax[i] = std::max(pmax[i], other[i]);
 }
 
+template<typename Scalar, int dim>
+bool BBox<Scalar, dim>::contains(const VecT& point) const noexcept{
+    bool in_bb = true;
+    for (int i = 0; i < dim; ++i) in_bb &= point[i] <= pmax[i];
+    if (!in_bb) return false; // early return if point outside
+    for (int i = 0; i < dim; ++i) in_bb &= point[i] >= pmin[i];
+
+    return in_bb;
+}
+
 // =================== Requirements for Quadtree indexing =================
 template<typename Scalar, int dim>
 Vec<Scalar, dim> BBox<Scalar, dim>::get_centroid() const noexcept {
