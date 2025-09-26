@@ -1,27 +1,7 @@
-add_library(geometry SHARED)
-add_library(SearchStructures::geometry ALIAS geometry)
-
-target_include_directories(geometry
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-           $<INSTALL_INTERFACE:include>
-)
-
 # Set .cpp files
 target_sources(geometry
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/bbox.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/point.cpp
-)
-
-# Set public headers
-target_sources(geometry PUBLIC
-    FILE_SET geometry_public_headers
-    TYPE HEADERS
-    BASE_DIRS ${CMAKE_SOURCE_DIR}/include
-    FILES ${CMAKE_SOURCE_DIR}/include/bbox.hpp
-          ${CMAKE_SOURCE_DIR}/include/bbox.h
-          ${CMAKE_SOURCE_DIR}/include/point.hpp
-          ${CMAKE_SOURCE_DIR}/include/point.h
-          ${CMAKE_SOURCE_DIR}/include/predicates.hpp
 )
 
 if (TARGET geometry)
@@ -32,17 +12,7 @@ if (TARGET geometry)
     )
 endif()
 
-
-add_library(quadtree SHARED)
-add_library(SearchStructures::quadtree ALIAS quadtree)
 target_link_libraries(quadtree PRIVATE geometry)
-
-target_include_directories(quadtree
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-           $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/interface>
-           $<INSTALL_INTERFACE:include>
-           $<INSTALL_INTERFACE:interface>
-)
 
 # Set .cpp files
 target_sources(quadtree
@@ -53,29 +23,6 @@ target_sources(quadtree
             ${CMAKE_CURRENT_SOURCE_DIR}/indexed_mesh_node_loc_2D.cpp
 
 )
-
-# Set public headers
-target_sources(quadtree PUBLIC
-    FILE_SET public_headers
-    TYPE HEADERS
-    BASE_DIRS ${CMAKE_SOURCE_DIR}/include
-    FILES ${CMAKE_SOURCE_DIR}/include/quadtree.hpp
-          ${CMAKE_SOURCE_DIR}/include/indexed_quadtree.hpp
-
-)
-
-# Set public interface
-target_sources(quadtree PUBLIC
-    FILE_SET interface_headers
-    TYPE HEADERS
-    BASE_DIRS ${CMAKE_SOURCE_DIR}/interface
-    FILES ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_2D.h
-          ${CMAKE_SOURCE_DIR}/interface/winding_number_tree_3D.h
-          ${CMAKE_SOURCE_DIR}/interface/surface_distance_2D.h
-          ${CMAKE_SOURCE_DIR}/interface/indexed_mesh_node_loc_2D.h
-          ${CMAKE_SOURCE_DIR}/interface/mesh_node_loc_2D.h
-)
-
 
 if (TARGET quadtree)
     install(

@@ -28,8 +28,19 @@ if (OPENMP_FOUND)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-add_subdirectory(src/)
-add_subdirectory(python/)
+# ======================= Define the targets ======================
+
+add_library(geometry SHARED)
+add_library(SearchStructures::geometry ALIAS geometry)
+
+add_library(quadtree SHARED)
+add_library(SearchStructures::quadtree ALIAS quadtree)
+
+# ======================== Add directories =======================
+add_subdirectory(interface/)  # library interface
+add_subdirectory(include/)    # Include files
+add_subdirectory(python/)     # Python bindings
+add_subdirectory(src/)        # Source files
 
 if (ENABLE_EXAMPLES)
     add_subdirectory(examples/)
