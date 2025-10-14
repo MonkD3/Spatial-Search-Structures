@@ -5,6 +5,7 @@ set(PYTHON_API_SRC
   surface_distance_2D.py
   mesh_node_loc_2D.py
   indexed_mesh_node_loc_2D.py
+  nearest_neighbor.py
 )
 
 foreach(f ${PYTHON_API_SRC})

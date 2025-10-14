@@ -21,7 +21,7 @@ target_sources(quadtree
             ${CMAKE_CURRENT_SOURCE_DIR}/surface_distance_2D.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/mesh_node_loc_2D.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/indexed_mesh_node_loc_2D.cpp
-
+            ${CMAKE_CURRENT_SOURCE_DIR}/point_cloud_nearest_neighbor.cpp
 )
 
 if (TARGET quadtree)
